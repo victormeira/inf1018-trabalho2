@@ -88,4 +88,13 @@ funcp compila (FILE *f){
   return (funcp)cod;
 }
 
-void libera (void *p);
+void libera (void *p){
+  int i;
+
+  for(i=0;p[i]!=0xC3;i++) /* enquanto não é o código de retorno */
+    free(p);
+
+  free(p);                /* da free no último */
+
+  return;
+}

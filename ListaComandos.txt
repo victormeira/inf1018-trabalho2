@@ -1,0 +1,10 @@
+LISTA DE COMANDOS E SEUS CÓDIGOS DE MÁQUINA
+
+ret 				- {0xC3}
+leave				- {0xC9}
+push %rbp			- {0x55}
+movq %rsp, %rbp		- {0x48, 0x89, 0xE5}
+subq $CON, %rsp		- {0x48, 0x83, 0xEC, CON (1 byte)}
+movq $CON, -N(%rbp)	- {0x48, 0xC7, 0x45, ??, CON in Little Endian (4 bytes)}
+movl REG, %eax		- {0x44 (dependendo se registrador é %rN), 0x89, R}
+movl CON, %eax		- {0xB8, CON in Little Endian (4 bytes)}
