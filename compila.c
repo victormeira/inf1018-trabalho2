@@ -1,3 +1,6 @@
+#include<stdio.h>
+#include<stdlib.h>
+
 typedef int (*funcp) ();
 
 static void error (const char *msg, int line) {
@@ -38,9 +41,10 @@ funcp compila (FILE *f){
   int pos = 0;            /* conta a ultima pos no vetor cod preenchida */					
 	unsigned char *cod; 		/* vetor com as instrucoes de maquina */
   unsigned char *aux;     /* vetor auxiliar */
+  unsigned char *paux; 
   unsigned char prep[] = {0x55, 0x48, 0x89, 0xE5, 0xC9, 0xC3};  /* equivalente a prepara pilha no (4 prim bytes), leave(4) e ret(5) */
 
-  cod = (unsigned char*)malloc(size_of(unsigned char)*4);
+  cod = (unsigned char*)malloc(sizeof(unsigned char)*4);
 
   for(i=0;i<4;i++,pos++)
       cod[i]=prep[i];     /* inicia vetor com pushq %rbp e movq %rsp, %rbp */
@@ -57,8 +61,8 @@ funcp compila (FILE *f){
         
         /* implementação parte do retorno */
 
-
-        &(cod[pos+1]) = (unsigned char)malloc(size_of(unsigned char)*2);
+        paux = cod+pos+1;
+        paux = (unsigned char*)malloc(sizeof(unsigned char)*2);
 
         for(i=4;i<6;i++,pos++)
           cod[pos+1]=prep[i];   /* finaliza o vetor com leave e ret */
@@ -103,8 +107,10 @@ funcp compila (FILE *f){
 
 void libera (void *p){
   int i;
+  unsigned char *cod;
+  cod = (unsigned char*) p;
 
-  for(i=0;p[i]!=0xC3;i++) /* enquanto não é o código de retorno */
+  for(i=0;cod[i]!=0xC3;i++) /* enquanto não é o código de retorno */
     free(p);
 
   free(p);                /* da free no último */
