@@ -2,5 +2,5 @@
 .text
 .globl main
 main:
-	addl %ebx, %eax
+	movl -1(%rbp), %eax
 	ret 

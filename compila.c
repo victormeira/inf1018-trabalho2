@@ -56,9 +56,54 @@ funcp compila (FILE *f){
         char var;
         if (fscanf(f, "et %c%d", &var, &idx) != 2) 
           error("comando invalido", line);
-        if (var != '$') 
-        	checkVarP(var, idx, line);
-        
+        if (var != '$')
+        {
+          checkVarP(var, idx, line);
+
+          if(var == 'p')  /* retorna um parametro */
+          {
+            paux = cod+pos+1;
+            paux = (unsigned char*)malloc(sizeof(unsigned char)*2);
+
+            cod[pos+1]= 0x89;
+            pos++;
+
+            if(idx == 0)
+              cod[pos+1]= 0xF8;
+            else
+              if(idx == 1)
+                cod[pos+1]= 0xF0;
+              else
+                cod[pos+1]= 0xD0;
+            pos++;
+          }
+          else            /* retorna uma var. local */
+          {
+            paux = cod+pos+1;
+            paux = (unsigned char*)malloc(sizeof(unsigned char)*3);
+
+            cod[pos+1]= 0x8B;
+            cod[pos+2]= 0x45;
+            pos = pos + 2;
+
+            cod[pos+1]= /* pos na pilha como signed */
+            pos++;
+
+          }
+
+        } 
+        else              /* retorna uma constante */
+        {
+          paux = cod+pos+1;
+          paux = (unsigned char*)malloc(sizeof(unsigned char)*5);
+
+          cod[pos+1] = 0xB8;
+          pos++;
+
+          for(i=0;i<4;i++,pos++)
+            cod[pos+1]=(unsigned char) idx >> 8*i;  /* preenche em Little Endian */
+
+        }
         /* implementação parte do retorno */
 
         paux = cod+pos+1;

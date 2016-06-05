@@ -8,3 +8,7 @@ subq $CON, %rsp		- {0x48, 0x83, 0xEC, CON (1 byte)}
 movq $CON, -N(%rbp)	- {0x48, 0xC7, 0x45, ??, CON in Little Endian (4 bytes)}
 movl REG, %eax		- {0x44 (dependendo se registrador é %rN), 0x89, R}
 movl CON, %eax		- {0xB8, CON in Little Endian (4 bytes)}
+movl %edi, %eax		- {0x89, 0xF8}
+movl %esi, %eax		- {0x89, 0xF0}
+movl %edx, %eax		- {0x89, 0xD0}
+movl -N(%rbp), %eax	- {0x8B, 0x45, -N como signed}
