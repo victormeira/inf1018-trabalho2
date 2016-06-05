@@ -38,6 +38,7 @@ funcp compila (FILE *f){
 	int line = 1;
 	int c;
 	int i;
+	int ultvar = -1;		/* guarda a o indice da ult var local criada */
 	int pos = 0;         /* conta a ultima pos no vetor cod preenchida */					
 	unsigned char *cod; 	/* vetor com as instrucoes de maquina */
 	unsigned char *aux;  /* vetor auxiliar */
@@ -120,7 +121,6 @@ funcp compila (FILE *f){
 					for(i=0;i<4;i++,pos++)
 						cod[pos+1]=(unsigned char) idx >> 8*i;  /* preenche em Little Endian */
 				}
-				/* implementação parte do retorno */
 
 				cod = (unsigned char*)realloc(cod,((pos+1)+2)*sizeof(unsigned char));  /* adiciona mais 2 pos no vetor */
 				if(cod==NULL)
@@ -134,6 +134,7 @@ funcp compila (FILE *f){
 
 				return (funcp)cod;
 			}
+
 			case 'i': {  				/* if - 'if' var n1 n2 n3 */
 				int idx, n1, n2, n3;
 				char var;
@@ -146,23 +147,64 @@ funcp compila (FILE *f){
 
 				break;
 			}
+
 			case 'v': {  				/* atribuicao - var '=' varpc op varpc */
 				int idx0, idx1, idx2;
 				char var0 = c, var1, var2;
 				char op;
-				if (fscanf(f, "%d = %c%d %c %c%d",
-									 &idx0, &var1, &idx1, &op, &var2, &idx2) != 6)
+				if (fscanf(f, "%d = %c%d %c %c%d", &idx0, &var1, &idx1, &op, &var2, &idx2) != 6)
 					error("comando invalido", line);
 				checkVar(var0, idx0, line);
-				if (var1 != '$') 
+				if (var1 != '$')
+				{
 					checkVarP(var1, idx1, line);
-				if (var2 != '$') 
+					if(var1 == 'p')	/* 1o eh parametro */
+					{
+
+					}
+					else					/* 1o eh varlocal */
+					{
+
+					}
+				}
+				else						/* 1o eh constante */
+				{
+
+				}
+
+				/* implementacao dos casos de operacao */
+
+				if (var2 != '$')
+				{
 					checkVarP(var2, idx2, line);
-				
-				/* implementação parte da atribuição */
+					if(var2 == 'p')	/* 2o eh parametro */
+					{
+
+					}
+					else					/* 2o eh varlocal */
+					{
+
+					}
+				}
+				else						/* 2o eh constante */
+				{
+
+				}
+
+				if(idx0 > ultvar) 	/* se for uma nova variavel */
+				{
+					if (ultvar%4 == 0)
+					{
+						/* subq $16, %rsp - {0x48, 0x83, 0xEC, 0x10} */
+					}
+					ultvar++;
+				}
+
+				/* implementacao de mover %ecx para var local lembrando que pospilha = (idx)*(-4) */
 
 				break;
 			}
+
 			default: error("comando desconhecido", line);
 		}
 		line ++;

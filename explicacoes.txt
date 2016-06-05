@@ -10,6 +10,9 @@ RETORNO:
 			movl %edx, %eax		- {0x89, 0xD0}
 		Se var local: (idx nos da pos na pilha -> pospilha = 4*idx)
 			movl -N(%rbp), %eax	- {0x8B, 0x45, -N como signed}
+	2) Colocamos leave e ret no final
+		leave				- {0xC9}
+		ret 				- {0xC3}
 
 ATRIBUICAO:
 	1) Movemos o varpc1 para um registrador auxiliar %ecx.
@@ -35,9 +38,9 @@ ATRIBUICAO:
 			Se constante:
 				imull -N(%rbp), %ecx- {0x0F, 0xAF, 0x4D, -N como signed}
 			Se parametro:
-				imull %edi, %ecx	- {0x0F, 0xF9}
-				imull %esi, %ecx	- {0x01, 0xF1}
-				imull %edx, %ecx	- {0x01, 0xD1}
+				imull %edi, %ecx	- {0x0F, 0xAF, 0xF9}
+				imull %esi, %ecx	- {0x0F, 0xAF, 0xF1}
+				imull %edx, %ecx	- {0x0F, 0xAF, 0xD1}
 			Se var local:
 				imull $N, %ecx		- {0x6B, 0xC9, N} (N<128). {0x69,0xC9, N in Little Endian(4 bytes)} (N>128)
 		Se sub:

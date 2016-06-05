@@ -2,5 +2,8 @@
 .text
 .globl main
 main:
-	movl -1(%rbp), %eax
+	imull $127, %ecx
+	imull $128, %ecx
+	subq $16, %rsp
 	ret 
+
