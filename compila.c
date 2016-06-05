@@ -57,7 +57,13 @@ funcp compila (FILE *f){
         
         /* implementação parte do retorno */
 
-        break;
+
+        &(cod[pos+1]) = (unsigned char)malloc(size_of(unsigned char)*2);
+
+        for(i=4;i<6;i++,pos++)
+          cod[pos+1]=prep[i];   /* finaliza o vetor com leave e ret */
+
+        return (funcp)cod;
       }
       case 'i': {  				/* if - 'if' var n1 n2 n3 */
         int idx, n1, n2, n3;
@@ -93,13 +99,6 @@ funcp compila (FILE *f){
     line ++;
     fscanf(f, " ");
   }
-
-  &(cod[pos+1]) = (unsigned char)malloc(size_of(unsigned char)*2);
-
-  for(i=4;i<6;i++;pos++)
-    cod[pos+1]=prep[i];   /* finaliza o vetor com leave e ret */
-
-  return (funcp)cod;
 }
 
 void libera (void *p){
