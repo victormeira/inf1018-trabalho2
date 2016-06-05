@@ -4,11 +4,36 @@ ret 				- {0xC3}
 leave				- {0xC9}
 push %rbp			- {0x55}
 movq %rsp, %rbp		- {0x48, 0x89, 0xE5}
-subq $CON, %rsp		- {0x48, 0x83, 0xEC, CON (1 byte)}
-movq $CON, -N(%rbp)	- {0x48, 0xC7, 0x45, ??, CON in Little Endian (4 bytes)}
+subq $16, %rsp		- {0x48, 0x83, 0xEC, 0x10}
+movq $N1, -N(%rbp)	- {0x48, 0xC7, 0x45, ??, N1 (4 bytes)}
 movl REG, %eax		- {0x44 (dependendo se registrador é %rN), 0x89, R}
-movl CON, %eax		- {0xB8, CON in Little Endian (4 bytes)}
+movl $N, %eax		- {0xB8, N in Little Endian (4 bytes)}
 movl %edi, %eax		- {0x89, 0xF8}
 movl %esi, %eax		- {0x89, 0xF0}
 movl %edx, %eax		- {0x89, 0xD0}
 movl -N(%rbp), %eax	- {0x8B, 0x45, -N como signed}
+movl $N, %ecx		- {0xB9, N in Little Endian (4 bytes)}
+addl -N(%rbp), %ecx	- {0x03, 0x4D, -N como signed}
+addl %edi, %ecx		- {0x01, 0xF9}
+addl %esi, %ecx		- {0x01, 0xF1}
+addl %edx, %ecx		- {0x01, 0xD1}
+addl $N, %ecx		- {0x83, 0xC1, N} (N<128). {0x81,0xC1, N in Little Endian(4 bytes)} (N>128)
+movl %ecx, -N(%rbp)	- {0x89, 0x4D, -N como signed}
+movl %ecx, %edi 	- {0x89, 0xCF}
+movl %ecx, %esi		- {0x89, 0xCE} 
+movl %ecx, %edx		- {0x89, 0xCA}
+imull -N(%rbp), %ecx- {0x0F, 0xAF, 0x4D, -N como signed}
+imull %edi, %ecx	- {0x0F, 0xF9}
+imull %esi, %ecx	- {0x01, 0xF1}
+imull %edx, %ecx	- {0x01, 0xD1}
+imull $N, %ecx		- {0x6B, 0xC9, N} (N<128). {0x69,0xC9, N in Little Endian(4 bytes)} (N>128)
+subl -N(%rbp), %ecx	- {0x2B, 0x4D, -N como signed}
+subl %edi, %ecx		- {0x29, 0xF9}
+subl %esi, %ecx		- {0x29, 0xF1}
+subl %edx, %ecx		- {0x29, 0xD1}
+subl $N, %ecx		- {0x83, 0xE9, N} (N<128). {0x81,0xE9, N in Little Endian(4 bytes)} (N>128)
+movl $N, %ecx		- {0xB9, N in Little Endian (4 bytes)}
+movl %edi, %ecx		- {0x89, 0xF9}
+movl %esi, %ecx		- {0x89, 0xF1}
+movl %edx, %ecx		- {0x89, 0xD1}
+movl -N(%rbp), %ecx	- {0x8B, 0x4D, -N como signed}
