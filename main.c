@@ -8,7 +8,7 @@ int main (int argc, char*argv[]) {
 	funcp SB;
 	int retorno;
 	
-	if (argc != 2) {
+	if (argc < 2) {
 		printf ("%s filename\n", argv[0]);
     	exit(1);
 	}
@@ -19,10 +19,11 @@ int main (int argc, char*argv[]) {
 	}
 	
 	SB = compila(input);
-	retorno = SB();
+
+	retorno = SB(atoi(argv[2]),atoi(argv[3]),atoi(argv[4]));
 	printf("retorno = %d\n", retorno);
 	
-	//libera(SB);
+	libera(SB);
 	
 	return 0;
 }

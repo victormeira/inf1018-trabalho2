@@ -119,8 +119,11 @@ funcp compila (FILE *f){
 					cod[pos+1] = 0xB8;
 					pos++;
 
-					for(i=0;i<4;i++,pos++)
-						cod[pos+1]=(unsigned char) idx >> 8*i;  /* preenche em Little Endian */
+					for(i=0;i<4;i++)
+					{
+						cod[pos+1]=(unsigned char) idx >> (8*i);  /* preenche em Little Endian */
+						pos++;
+					}
 				}
 
 				cod = (unsigned char*)realloc(cod,((pos+1)+2)*sizeof(unsigned char));  /* adiciona mais 2 pos no vetor */
@@ -130,10 +133,18 @@ funcp compila (FILE *f){
 					exit(-2);
 				}
 
-				for(i=4;i<6;i++,pos++)
+				for(i=4;i<6;i++)
+				{
 					cod[pos+1]=prep[i];   /* finaliza o vetor com leave e ret */
+					pos++;
+				}
 
-				return (funcp)cod;
+				printf("Vetor Final: ");
+				for(i=0;i<pos+1;i++)
+					printf("0x%0x ",cod[i]);
+				printf("\n");
+
+				return (funcp) cod;
 			}
 
 			case 'i': {  				/* if - 'if' var n1 n2 n3 */
@@ -216,14 +227,8 @@ funcp compila (FILE *f){
 }
 
 void libera (void *p){
-	int i;
-	unsigned char *cod;
-	cod = (unsigned char*) p;
-
-	for(i=0;cod[i]!=0xC3;i++) /* enquanto não é o código de retorno */
-		free(p);
-
-	free(p);                /* da free no último */
+	
+	free(p);
 
 	return;
 }
