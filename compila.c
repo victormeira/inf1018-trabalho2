@@ -52,9 +52,10 @@ funcp compila (FILE *f){
 		exit(-1);
 	}
 
-	for(i=0;i<4;i++,pos++)
+	for(i=0;i<4;i++)
 		cod[i]=prep[i];     /* inicia vetor com pushq %rbp e movq %rsp, %rbp */
-
+	pos = i-1;
+	
 	while ((c = fgetc(f)) != EOF) {
 		switch (c) {
 			case 'r': {  				/* retorno - 'ret' varpc */

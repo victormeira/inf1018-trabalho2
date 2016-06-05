@@ -22,7 +22,7 @@ int main (int argc, char*argv[]) {
 	retorno = SB();
 	printf("retorno = %d\n", retorno);
 	
-	libera(SB);
+	//libera(SB);
 	
 	return 0;
 }
