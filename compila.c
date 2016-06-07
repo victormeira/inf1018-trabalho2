@@ -289,11 +289,9 @@ funcp compila (FILE *f){
 
 			for(k=0;k<3;k++){
 				posifaux+=2; /* pula para prox buraco do if */
-				offset = (linecontrol[cod[posifaux]-1] - posifaux)-1;
-				if(offset<0)
-					offset = offset-4;
+				offset = (linecontrol[cod[posifaux]-1] - posifaux)-4;
 							/* posicao da linha que esta no cod atual menos a pos atual */
-							/* -1 pois a atual nao conta no offset (apenas distancia)   */
+							/* -4 pois o ultimo pedaco do offset esta 4 bytes depois */
 				for (j=0; j<4; j++){
 						cod[posifaux] = (unsigned char) (offset >> (8*j)); /* preenche em Little Endian */
 						posifaux++;
@@ -312,6 +310,5 @@ funcp compila (FILE *f){
 
 void libera (void *p){
 	free(p);
-
 	return;
 }
