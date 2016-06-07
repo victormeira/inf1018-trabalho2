@@ -1,2 +1,48 @@
-jmp fora
-
+L2:
+jl L1
+je fora
+jg fora
+je fora
+jg fora
+je fora
+jg fora
+je fora
+jg fora
+je fora
+jg fora
+je fora
+jg fora
+je fora
+jg fora
+je fora
+jg fora
+je fora
+jg fora
+je fora
+jg fora
+je fora
+jg fora
+je fora
+jg fora
+je fora
+jg fora
+je fora
+jg fora
+je fora
+jg fora
+je fora
+jg fora
+je fora
+jg fora
+je fora
+jg fora
+je fora
+jg fora
+je fora
+jg fora
+je fora
+jg fora
+je fora
+jg fora
+L1:
+	jmp L2

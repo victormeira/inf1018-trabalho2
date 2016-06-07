@@ -35,7 +35,7 @@ void checkVarP(char var, int idx, int line) {
 }
 
 funcp compila (FILE *f){
-	int c, i, j;
+	int c, i, j, k, offset;
 	int line = 1;			/* guarda o valor da linha no arquivo */
 	int ultvar = -1;		/* guarda o indice da ult var local criada */
 	int pos = 0;         	/* conta a ultima pos no vetor cod preenchida */
@@ -129,19 +129,22 @@ funcp compila (FILE *f){
 					pos+=4;
 
 					/* adiciona jl e coloca onde ficara o offset a linha para onde deve pular */
-					cod[pos+1]= 0x7C;
-					cod[pos+2]= n1;
-					pos+=2;
+					cod[pos+1]= 0x0F;
+					cod[pos+2]= 0x8C;
+					cod[pos+3]= n1;
+					pos+=6;
 
 					/* adiciona je e coloca onde ficara o offset a linha para onde deve pular */
-					cod[pos+1]= 0x74;
-					cod[pos+2]= n2;
-					pos+=2;
+					cod[pos+1]= 0x0F;
+					cod[pos+2]= 0x84;
+					cod[pos+3]= n2;
+					pos+=6;
 
 					/* adiciona jl e coloca onde ficara o offset a linha para onde deve pular */
-					cod[pos+1]= 0x7F;
-					cod[pos+2]= n3;
-					pos+=2;
+					cod[pos+1]= 0x0F;
+					cod[pos+2]= 0x8F;
+					cod[pos+3]= n3;
+					pos+=6;
 
 					ifcontrol[line-1] = 1; /* seta o ifcontrol a 1 para dizer que tem if na linha line */
 				}
@@ -282,17 +285,19 @@ funcp compila (FILE *f){
 	for(i=0;i<line;i++){
 		if(ifcontrol[i]){
 			posifaux = linecontrol[i]; /* posicao no vetor cod que comeca o if*/
-			posifaux += 5;
+			posifaux += 4;
 
-			/* seta o offset do menor que 0 */
-			cod[posifaux] = (linecontrol[cod[posifaux]-1] - posifaux)-1; 	
+			for(k=0;k<3;k++){
+				posifaux+=2; /* pula para prox buraco do if */
+				offset = (linecontrol[cod[posifaux]-1] - posifaux)-1;
+				if(offset<0)
+					offset = offset-4;
 							/* posicao da linha que esta no cod atual menos a pos atual */
-							/* -1 pois a atual nao conta no offset (apenas distancia) */
-
-			/* seta o offset do igual a 0 e maior que 0 */
-			for(j=0;j<2;j++){
-				posifaux += 2;
-				cod[posifaux] = (linecontrol[cod[posifaux]-1] - posifaux)-1;
+							/* -1 pois a atual nao conta no offset (apenas distancia)   */
+				for (j=0; j<4; j++){
+						cod[posifaux] = (unsigned char) (offset >> (8*j)); /* preenche em Little Endian */
+						posifaux++;
+				}
 			}
 		}
 	} 

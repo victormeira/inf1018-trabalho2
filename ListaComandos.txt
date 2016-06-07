@@ -38,6 +38,6 @@ movl %esi, %ecx		- {0x89, 0xF1}
 movl %edx, %ecx		- {0x89, 0xD1}
 movl -N(%rbp), %ecx	- {0x8B, 0x4D, -N como signed}
 cmpl $0, -N(%rbp)	- {0x83, 0x7D, -N como signed, 0x00}
-jl	L 				- {0x7c, OFFSET como signed}
-je	L 				- {0x74, OFFSET como signed}
-jg	L 				- {0x7F, OFFSET como signed}
+jl	L 				- {0x0F, 0x8C, OFFSET como signed 32 bits}
+je	L 				- {0x0F, 0x84, OFFSET como signed 32 bits}
+jg	L 				- {0x0F, 0x8F, OFFSET como signed 32 bits}
