@@ -49,6 +49,28 @@ ATRIBUICAO: vi = varpc1 op varpc2 (0 <= i <= 19)
 		movl %eax, -N(%rbp)			- {0x89, 0x45, -N como signed}
 
 IF:
+	1) Aloca 10 pos no vetor Cod
+	2) Compara var com 0
+		cmpl $0, -N(%rbp)	- {0x83, 0x7D, -N como signed, 0x00}
+	3) Coloca no vetor Cod os comandos e a linha que deveria ir no lugar dos offset
+		jl	L 				- {0x7c, LINHA QUE DEVERIA PULAR}
+		je	L 				- {0x74, LINHA QUE DEVERIA PULAR}
+		jg	L 				- {0x7F, LINHA QUE DEVERIA PULAR}
+	4) Marca no vetor ifcontrol que na linha i tem if
+		control_if[i-1] = 1
+	5) Ao final do arquivo, percorre vetor ifcontrol.
+		Se tiver if na linha:
+			Usa linecontrol, para ir pra pos da linha no vetor cod.
+			Pula +5 pos.
+			(*1)Calcula offset entre pos atual e pos da linha guardada (note que e menos 1 pois nao conta no offset a var que esta)
+				(linecontrol[cod[pos]-1] - pos) - 1
+			(*2)Poe no vetor cod como signed.
+			Pula +2 pos.
+			Repete(*1) e (*2)
+			Pula +2 pos
+			Repete(*1) e (*2)
+
+
 
 
 

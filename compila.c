@@ -34,47 +34,54 @@ void checkVarP(char var, int idx, int line) {
 	 }
 }
 
+void checkRealloc(unsigned char *v){
+	if(v == NULL){
+		printf("Erro realocacao de memoria. \n");
+		exit(-2);
+	}
+}
+
+
 funcp compila (FILE *f){
-	int line = 1;
-	int c;
-	int i;
+	int c, i, j;
+	int line = 1;			/* guarda o valor da linha no arquivo */
 	int ultvar = -1;		/* guarda o indice da ult var local criada */
-	int pos = 0;         	/* conta a ultima pos no vetor cod preenchida */					
+	int pos = 0;         	/* conta a ultima pos no vetor cod preenchida */
+	int posifaux = 0;		/* inteiro auxiliar para calculo do offset if */					
 	unsigned char *cod; 	/* vetor com as instrucoes de maquina */
-	unsigned char *aux;  	/* vetor auxiliar */
-	unsigned char prep[] = {0x55, 0x48, 0x89, 0xE5, 0xC9, 0xC3};  /* equivalente a prepara pilha no (4 prim bytes), leave(4) e ret(5) */
+	char ifcontrol[50];		/* vetor auxiliar onde se ifcontrol[i] == 1, tem if na linha (i+1) */
+	int linecontrol[50];	/* vetor auxiliar que diz a pos no vetor cod da (i-esima+1) linha */
+	unsigned char prep[] = {0x55, 0x48, 0x89, 0xE5, 0xC9, 0xC3};  
+							/* equivalente a prepara pilha no (4 prim bytes), leave(4) e ret(5) */
 
 	cod = (unsigned char*)malloc(sizeof(unsigned char)*4);
 
-	if(cod==NULL)
-	{
-		printf("Erro alocacao de memoria");
+	if(cod==NULL){
+		printf("Erro alocacao de memoria.\n");
 		exit(-1);
 	}
 
 	for(i=0;i<4;i++)
 		cod[i]=prep[i];     /* inicia vetor com pushq %rbp e movq %rsp, %rbp */
 	pos = i-1;
+
+	for(i=0;i<50;i++)
+		ifcontrol[i] = 0;
 	
-	while ((c = fgetc(f)) != EOF) {
-		switch (c) {
+	while ((c = fgetc(f)) != EOF){
+		linecontrol[line-1] = (pos+1); 	/* linha comeca pos seguinte a ultima preenchida */
+		switch (c){
 			case 'r': {  				/* retorno - 'ret' varpc */
 				int idx;
 				char var;
 				if (fscanf(f, "et %c%d", &var, &idx) != 2) 
 					error("comando invalido", line);
-				if (var != '$')
-				{
+				if (var != '$'){
 					checkVarP(var, idx, line);
 
-					if(var == 'p')  /* retorna um parametro */
-					{
+					if(var == 'p')  /* retorna um parametro */{
 						cod = (unsigned char*)realloc(cod,((pos+1)+2)*sizeof(unsigned char));  /* adiciona mais 2 pos no vetor */
-						if(cod==NULL)
-						{
-						 printf("Erro realocacao de memoria");
-						 exit(-2);
-						}
+						checkRealloc(cod);
 
 						cod[pos+1]= 0x89;
 						pos++;
@@ -88,18 +95,13 @@ funcp compila (FILE *f){
 								cod[pos+1]= 0xD0;
 						pos++;
 					}
-					else            /* retorna uma var. local */
-					{
+					else{        /* retorna uma var. local */
 						cod = (unsigned char*)realloc(cod,((pos+1)+3)*sizeof(unsigned char));  /* adiciona mais 3 pos no vetor */
-						if(cod==NULL)
-						{
-						 printf("Erro realocacao de memoria");
-						 exit(-2);
-						}
+						checkRealloc(cod);
 
 						cod[pos+1]= 0x8B;
 						cod[pos+2]= 0x45;
-						pos = pos + 2;
+						pos += 2;
 
 						cod[pos+1]= ((idx+1)*(-4)); /* pos na pilha como signed */
 						pos++;
@@ -107,34 +109,23 @@ funcp compila (FILE *f){
 					}
 
 				} 
-				else              /* retorna uma constante */
-				{
+				else{           /* retorna uma constante */
 					cod = (unsigned char*)realloc(cod,((pos+1)+5)*sizeof(unsigned char));  /* adiciona mais 5 pos no vetor */
-					if(cod==NULL)
-					{
-						printf("Erro realocacao de memoria");
-						exit(-2);
-					}
+					checkRealloc(cod);
 
 					cod[pos+1] = 0xB8;
 					pos++;
 
-					for(i=0;i<4;i++)
-					{
+					for(i=0;i<4;i++){
 						cod[pos+1]=(unsigned char) (idx >> (8*i));  /* preenche em Little Endian */
 						pos++;
 					}
 				}
 
 				cod = (unsigned char*)realloc(cod,((pos+1)+2)*sizeof(unsigned char));  /* adiciona mais 2 pos no vetor */
-				if(cod==NULL)
-				{
-					printf("Erro realocacao de memoria");
-					exit(-2);
-				}
+				checkRealloc(cod);
 
-				for(i=4;i<6;i++)
-				{
+				for(i=4;i<6;i++){
 					cod[pos+1]=prep[i];   /* finaliza o vetor com leave e ret */
 					pos++;
 				}
@@ -147,11 +138,36 @@ funcp compila (FILE *f){
 				char var;
 				if (fscanf(f, "f %c%d %d %d %d", &var, &idx, &n1, &n2, &n3) != 5)
 					error("comando invalido", line);
-				if (var != '$') 
+				if (var != '$'){
 					checkVar(var, idx, line);
-				
-				/* implementação parte do if */
 
+					cod = (unsigned char*)realloc(cod,((pos+1)+10)*sizeof(unsigned char));  /* adiciona mais 10 pos no vetor */
+					checkRealloc(cod);
+
+					/* adiciona o cmpl $0, var */
+					cod[pos+1] = 0x83;
+					cod[pos+2] = 0x7D;
+					cod[pos+3] = ((idx+1)*(-4)); /* pos na pilha como signed */
+					cod[pos+4] = 0x00;
+					pos+=4;
+
+					/* adiciona jl e coloca onde ficara o offset a linha para onde deve pular */
+					cod[pos+1]= 0x7C;
+					cod[pos+2]= n1;
+					pos+=2;
+
+					/* adiciona je e coloca onde ficara o offset a linha para onde deve pular */
+					cod[pos+1]= 0x74;
+					cod[pos+2]= n2;
+					pos+=2;
+
+					/* adiciona jl e coloca onde ficara o offset a linha para onde deve pular */
+					cod[pos+1]= 0x7F;
+					cod[pos+2]= n3;
+					pos+=2;
+
+					ifcontrol[line-1] = 1; /* seta o ifcontrol a 1 para dizer que tem if na linha line */
+				}
 				break;
 			}
 
@@ -162,12 +178,12 @@ funcp compila (FILE *f){
 				if (fscanf(f, "%d = %c%d %c %c%d", &idx0, &var1, &idx1, &op, &var2, &idx2) != 6)
 					error("comando invalido", line);
 				checkVar(var0, idx0, line);
-				if (var1 != '$')
-				{
+				if (var1 != '$'){
 					checkVarP(var1, idx1, line);
-					if(var1 == 'p')	/* 1o eh parametro */
-					{
+					if(var1 == 'p'){	/* 1o eh parametro */
 						cod = (unsigned char*)realloc(cod,((pos+1)+2)*sizeof(unsigned char));  /* adiciona mais 2 pos no vetor */
+						checkRealloc(cod);
+
 						cod[pos+1] = 0x89;
 						pos++;
 						switch (idx1) {
@@ -186,90 +202,100 @@ funcp compila (FILE *f){
 						}
 						pos++;
 					}
-					else					/* 1o eh varlocal */
-					{
+					else{					/* 1o eh varlocal */
 						cod = (unsigned char*)realloc(cod,((pos+1)+3)*sizeof(unsigned char));  /* adiciona mais 3 pos no vetor */
+						checkRealloc(cod);
+
 						cod[pos+1] = 0x8B;
 						cod[pos+2] = 0x45;
 						cod[pos+3] = ((idx1+1)*(-4));
 						pos += 3;
 					}
 				}
-				else						/* 1o eh constante */
-				{
+				else{ 						/* 1o eh constante */
 					cod = (unsigned char*)realloc(cod,((pos+1)+5)*sizeof(unsigned char));  /* adiciona mais 5 pos no vetor */
+					checkRealloc(cod);
+
 					cod[pos+1] = 0xB8;
 					pos++;
 					
-					for (i=0; i<4; i++) {
+					for (i=0; i<4; i++){
 						cod[pos+1] = (unsigned char) (idx1 >> (8*i)); /* preenche em Little Endian */
 						pos++;
 					}
 				}
 
-				if (var2 != '$')
-				{
+				if (var2 != '$'){
 					checkVarP(var2, idx2, line);
-					if(var2 == 'p')	/* 2o eh parametro */
-					{
+					if(var2 == 'p'){		/* 2o eh parametro */
 						cod = (unsigned char*)realloc(cod,((pos+1)+2)*sizeof(unsigned char));  /* adiciona mais 2 pos no vetor */
+						checkRealloc(cod);
+
 						cod[pos+1] = 0x89;
 						pos++;
-						switch (idx2) {
-							case 0: {
+						switch (idx2){
+							case 0:{
 								cod[pos+1] = 0xF9;
 								break;
 							}
-							case 1: {
+							case 1:{
 								cod[pos+1] = 0xF1;
 								break;
 							}
-							case 2: {
+							case 2:{
 								cod[pos+1] = 0xD1;
 								break;
 							}
 						}
 						pos++;
 					}
-					else					/* 2o eh varlocal */
-					{
+					else{					/* 2o eh varlocal */
 						cod = (unsigned char*)realloc(cod,((pos+1)+3)*sizeof(unsigned char));  /* adiciona mais 3 pos no vetor */
+						checkRealloc(cod);
+
 						cod[pos+1] = 0x8B;
 						cod[pos+2] = 0x4D;
 						cod[pos+3] = ((idx2+1)*(-4));
 						pos += 3;
 					}
 				}
-				else						/* 2o eh constante */
-				{
+				else{						/* 2o eh constante */
 					cod = (unsigned char*)realloc(cod,((pos+1)+5)*sizeof(unsigned char));  /* adiciona mais 5 pos no vetor */
+					checkRealloc(cod);
+
 					cod[pos+1] = 0xB9;
 					pos++;
 					
-					for (i=0; i<4; i++) {
+					for (i=0; i<4; i++){
 						cod[pos+1] = (unsigned char) (idx2 >> (8*i)); /* preenche em Little Endian */
 						pos++;
 					}
 				}
 
 				/* implementacao dos casos de operacao */
-				switch (op) {
-					case '+': {
+				switch (op){
+					case '+':{
 						cod = (unsigned char*)realloc(cod,((pos+1)+2)*sizeof(unsigned char));  /* adiciona mais 2 pos no vetor */
+						checkRealloc(cod);
+
 						cod[pos+1] = 0x01;
 						cod[pos+2] = 0xC8;
 						pos += 2;
 						break;
 					}
-					case '-': {
+					case '-':{
 						cod = (unsigned char*)realloc(cod,((pos+1)+2)*sizeof(unsigned char));  /* adiciona mais 2 pos no vetor */
+						checkRealloc(cod);
+
 						cod[pos+1] = 0x29;
 						cod[pos+2] = 0xC8;
 						pos += 2;
 						break;
 					}
-					case '*': {
+					case '*':{
 						cod = (unsigned char*)realloc(cod,((pos+1)+3)*sizeof(unsigned char));  /* adiciona mais 3 pos no vetor */
+						checkRealloc(cod);
+
 						cod[pos+1] = 0x0F;
 						cod[pos+2] = 0xAF;
 						cod[pos+3] = 0xC1;
@@ -278,11 +304,11 @@ funcp compila (FILE *f){
 					}
 				}
 
-				if(idx0 > ultvar) 	/* se for uma nova variavel */
-				{
-					if (idx0%4 == 0)
-					{
+				if(idx0 > ultvar){ 		/* se for uma nova variavel */
+					if (idx0%4 == 0){ 	/* se passar for multiplo de 4, quer dizer que tem que tirar mais 16 da pilha */
 						cod = (unsigned char*)realloc(cod,((pos+1)+4)*sizeof(unsigned char));  /* adiciona mais 4 pos no vetor */
+						checkRealloc(cod);
+
 						/* subq $16, %rsp - {0x48, 0x83, 0xEC, 0x10} */
 						cod[pos+1] = 0x48;
 						cod[pos+2] = 0x83;
@@ -295,18 +321,37 @@ funcp compila (FILE *f){
 
 				/* implementacao de mover %eax para var local lembrando que pospilha = (idx+1)*(-4) */
 				cod = (unsigned char*)realloc(cod,((pos+1)+3)*sizeof(unsigned char));  /* adiciona mais 3 pos no vetor */
+				checkRealloc(cod);
+
 				cod[pos+1] = 0x89;
 				cod[pos+2] = 0x45;
 				cod[pos+3] = ((idx0+1)*(-4));
 				pos += 3;
 				break;
 			}
-
 			default: error("comando desconhecido", line);
 		}
 		line ++;
 		fscanf(f, " ");
 	}
+
+	for(i=0;i<line;i++){
+		if(ifcontrol[i]){
+			posifaux = linecontrol[i]; /* posicao no vetor cod que comeca o if*/
+			posifaux += 5;
+
+			/* seta o offset do menor que 0 */
+			cod[posifaux] = (linecontrol[cod[posifaux]-1] - posifaux)-1; 	
+							/* posicao da linha que esta no cod atual menos a pos atual */
+							/* -1 pois a atual nao conta no offset (apenas distancia) */
+
+			/* seta o offset do igual a 0 e maior que 0 */
+			for(j=0;j<2;j++){
+				posifaux += 2;
+				cod[posifaux] = (linecontrol[cod[posifaux]-1] - posifaux)-1;
+			}
+		}
+	} 
 
 	printf("Vetor Final: ");
 	for(i=0;i<pos+1;i++)
@@ -317,7 +362,6 @@ funcp compila (FILE *f){
 }
 
 void libera (void *p){
-	
 	free(p);
 
 	return;

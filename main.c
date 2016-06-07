@@ -20,8 +20,26 @@ int main (int argc, char*argv[]) {
 	
 	SB = compila(input);
 
-	retorno = SB(atoi(argv[2]),atoi(argv[3]),atoi(argv[4]));
-	printf("retorno = %d\n", retorno);
+	switch(argc) {
+		case 2:{
+			retorno = SB();
+			break;
+		}
+		case 3:{
+			retorno = SB(atoi(argv[2]));
+			break;
+		}
+		case 4:{
+			retorno = SB(atoi(argv[2]),atoi(argv[3]));
+			break;
+		}
+		case 5:{
+			retorno = SB(atoi(argv[2]),atoi(argv[3]),atoi(argv[4]));
+			break;
+		}
+	}
+
+	printf("Valor de Retorno = %d\n", retorno);
 	
 	libera(SB);
 	
