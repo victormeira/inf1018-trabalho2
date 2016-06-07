@@ -34,14 +34,6 @@ void checkVarP(char var, int idx, int line) {
 	 }
 }
 
-void checkRealloc(unsigned char *v){
-	if(v == NULL){
-		printf("Erro realocacao de memoria. \n");
-		exit(-2);
-	}
-}
-
-
 funcp compila (FILE *f){
 	int c, i, j;
 	int line = 1;			/* guarda o valor da linha no arquivo */
@@ -54,7 +46,7 @@ funcp compila (FILE *f){
 	unsigned char prep[] = {0x55, 0x48, 0x89, 0xE5, 0xC9, 0xC3};  
 							/* equivalente a prepara pilha no (4 prim bytes), leave(4) e ret(5) */
 
-	cod = (unsigned char*)malloc(sizeof(unsigned char)*4);
+	cod = (unsigned char*)malloc(sizeof(unsigned char)*1024);
 
 	if(cod==NULL){
 		printf("Erro alocacao de memoria.\n");
@@ -80,9 +72,6 @@ funcp compila (FILE *f){
 					checkVarP(var, idx, line);
 
 					if(var == 'p')  /* retorna um parametro */{
-						cod = (unsigned char*)realloc(cod,((pos+1)+2)*sizeof(unsigned char));  /* adiciona mais 2 pos no vetor */
-						checkRealloc(cod);
-
 						cod[pos+1]= 0x89;
 						pos++;
 
@@ -96,9 +85,6 @@ funcp compila (FILE *f){
 						pos++;
 					}
 					else{        /* retorna uma var. local */
-						cod = (unsigned char*)realloc(cod,((pos+1)+3)*sizeof(unsigned char));  /* adiciona mais 3 pos no vetor */
-						checkRealloc(cod);
-
 						cod[pos+1]= 0x8B;
 						cod[pos+2]= 0x45;
 						pos += 2;
@@ -110,9 +96,6 @@ funcp compila (FILE *f){
 
 				} 
 				else{           /* retorna uma constante */
-					cod = (unsigned char*)realloc(cod,((pos+1)+5)*sizeof(unsigned char));  /* adiciona mais 5 pos no vetor */
-					checkRealloc(cod);
-
 					cod[pos+1] = 0xB8;
 					pos++;
 
@@ -121,10 +104,7 @@ funcp compila (FILE *f){
 						pos++;
 					}
 				}
-
-				cod = (unsigned char*)realloc(cod,((pos+1)+2)*sizeof(unsigned char));  /* adiciona mais 2 pos no vetor */
-				checkRealloc(cod);
-
+				
 				for(i=4;i<6;i++){
 					cod[pos+1]=prep[i];   /* finaliza o vetor com leave e ret */
 					pos++;
@@ -140,10 +120,7 @@ funcp compila (FILE *f){
 					error("comando invalido", line);
 				if (var != '$'){
 					checkVar(var, idx, line);
-
-					cod = (unsigned char*)realloc(cod,((pos+1)+10)*sizeof(unsigned char));  /* adiciona mais 10 pos no vetor */
-					checkRealloc(cod);
-
+					
 					/* adiciona o cmpl $0, var */
 					cod[pos+1] = 0x83;
 					cod[pos+2] = 0x7D;
@@ -181,9 +158,6 @@ funcp compila (FILE *f){
 				if (var1 != '$'){
 					checkVarP(var1, idx1, line);
 					if(var1 == 'p'){	/* 1o eh parametro */
-						cod = (unsigned char*)realloc(cod,((pos+1)+2)*sizeof(unsigned char));  /* adiciona mais 2 pos no vetor */
-						checkRealloc(cod);
-
 						cod[pos+1] = 0x89;
 						pos++;
 						switch (idx1) {
@@ -203,9 +177,6 @@ funcp compila (FILE *f){
 						pos++;
 					}
 					else{					/* 1o eh varlocal */
-						cod = (unsigned char*)realloc(cod,((pos+1)+3)*sizeof(unsigned char));  /* adiciona mais 3 pos no vetor */
-						checkRealloc(cod);
-
 						cod[pos+1] = 0x8B;
 						cod[pos+2] = 0x45;
 						cod[pos+3] = ((idx1+1)*(-4));
@@ -213,9 +184,6 @@ funcp compila (FILE *f){
 					}
 				}
 				else{ 						/* 1o eh constante */
-					cod = (unsigned char*)realloc(cod,((pos+1)+5)*sizeof(unsigned char));  /* adiciona mais 5 pos no vetor */
-					checkRealloc(cod);
-
 					cod[pos+1] = 0xB8;
 					pos++;
 					
@@ -228,9 +196,6 @@ funcp compila (FILE *f){
 				if (var2 != '$'){
 					checkVarP(var2, idx2, line);
 					if(var2 == 'p'){		/* 2o eh parametro */
-						cod = (unsigned char*)realloc(cod,((pos+1)+2)*sizeof(unsigned char));  /* adiciona mais 2 pos no vetor */
-						checkRealloc(cod);
-
 						cod[pos+1] = 0x89;
 						pos++;
 						switch (idx2){
@@ -250,9 +215,6 @@ funcp compila (FILE *f){
 						pos++;
 					}
 					else{					/* 2o eh varlocal */
-						cod = (unsigned char*)realloc(cod,((pos+1)+3)*sizeof(unsigned char));  /* adiciona mais 3 pos no vetor */
-						checkRealloc(cod);
-
 						cod[pos+1] = 0x8B;
 						cod[pos+2] = 0x4D;
 						cod[pos+3] = ((idx2+1)*(-4));
@@ -260,9 +222,6 @@ funcp compila (FILE *f){
 					}
 				}
 				else{						/* 2o eh constante */
-					cod = (unsigned char*)realloc(cod,((pos+1)+5)*sizeof(unsigned char));  /* adiciona mais 5 pos no vetor */
-					checkRealloc(cod);
-
 					cod[pos+1] = 0xB9;
 					pos++;
 					
@@ -275,27 +234,18 @@ funcp compila (FILE *f){
 				/* implementacao dos casos de operacao */
 				switch (op){
 					case '+':{
-						cod = (unsigned char*)realloc(cod,((pos+1)+2)*sizeof(unsigned char));  /* adiciona mais 2 pos no vetor */
-						checkRealloc(cod);
-
 						cod[pos+1] = 0x01;
 						cod[pos+2] = 0xC8;
 						pos += 2;
 						break;
 					}
 					case '-':{
-						cod = (unsigned char*)realloc(cod,((pos+1)+2)*sizeof(unsigned char));  /* adiciona mais 2 pos no vetor */
-						checkRealloc(cod);
-
 						cod[pos+1] = 0x29;
 						cod[pos+2] = 0xC8;
 						pos += 2;
 						break;
 					}
 					case '*':{
-						cod = (unsigned char*)realloc(cod,((pos+1)+3)*sizeof(unsigned char));  /* adiciona mais 3 pos no vetor */
-						checkRealloc(cod);
-
 						cod[pos+1] = 0x0F;
 						cod[pos+2] = 0xAF;
 						cod[pos+3] = 0xC1;
@@ -306,9 +256,6 @@ funcp compila (FILE *f){
 
 				if(idx0 > ultvar){ 		/* se for uma nova variavel */
 					if (idx0%4 == 0){ 	/* se passar for multiplo de 4, quer dizer que tem que tirar mais 16 da pilha */
-						cod = (unsigned char*)realloc(cod,((pos+1)+4)*sizeof(unsigned char));  /* adiciona mais 4 pos no vetor */
-						checkRealloc(cod);
-
 						/* subq $16, %rsp - {0x48, 0x83, 0xEC, 0x10} */
 						cod[pos+1] = 0x48;
 						cod[pos+2] = 0x83;
@@ -320,9 +267,6 @@ funcp compila (FILE *f){
 				}
 
 				/* implementacao de mover %eax para var local lembrando que pospilha = (idx+1)*(-4) */
-				cod = (unsigned char*)realloc(cod,((pos+1)+3)*sizeof(unsigned char));  /* adiciona mais 3 pos no vetor */
-				checkRealloc(cod);
-
 				cod[pos+1] = 0x89;
 				cod[pos+2] = 0x45;
 				cod[pos+3] = ((idx0+1)*(-4));
