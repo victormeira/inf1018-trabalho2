@@ -38,10 +38,10 @@ funcp compila (FILE *f){
 	int line = 1;
 	int c;
 	int i;
-	int ultvar = -1;		/* guarda a o indice da ult var local criada */
-	int pos = 0;         /* conta a ultima pos no vetor cod preenchida */					
+	int ultvar = -1;		/* guarda o indice da ult var local criada */
+	int pos = 0;         	/* conta a ultima pos no vetor cod preenchida */					
 	unsigned char *cod; 	/* vetor com as instrucoes de maquina */
-	unsigned char *aux;  /* vetor auxiliar */
+	unsigned char *aux;  	/* vetor auxiliar */
 	unsigned char prep[] = {0x55, 0x48, 0x89, 0xE5, 0xC9, 0xC3};  /* equivalente a prepara pilha no (4 prim bytes), leave(4) e ret(5) */
 
 	cod = (unsigned char*)malloc(sizeof(unsigned char)*4);
@@ -101,7 +101,7 @@ funcp compila (FILE *f){
 						cod[pos+2]= 0x45;
 						pos = pos + 2;
 
-						cod[pos+1]= (idx*(-4)); /* pos na pilha como signed */
+						cod[pos+1]= ((idx+1)*(-4)); /* pos na pilha como signed */
 						pos++;
 
 					}
@@ -138,11 +138,6 @@ funcp compila (FILE *f){
 					cod[pos+1]=prep[i];   /* finaliza o vetor com leave e ret */
 					pos++;
 				}
-
-				printf("Vetor Final: ");
-				for(i=0;i<pos+1;i++)
-					printf("0x%0x ",cod[i]);
-				printf("\n");
 				
 				break;
 			}
@@ -175,7 +170,7 @@ funcp compila (FILE *f){
 						cod = (unsigned char*)realloc(cod,((pos+1)+2)*sizeof(unsigned char));  /* adiciona mais 2 pos no vetor */
 						cod[pos+1] = 0x89;
 						pos++;
-						switch (idx2) {
+						switch (idx1) {
 							case 0: {
 								cod[pos+1] = 0xF8;
 								break;
@@ -196,7 +191,7 @@ funcp compila (FILE *f){
 						cod = (unsigned char*)realloc(cod,((pos+1)+3)*sizeof(unsigned char));  /* adiciona mais 3 pos no vetor */
 						cod[pos+1] = 0x8B;
 						cod[pos+2] = 0x45;
-						cod[pos+3] = (idx1*(-4));
+						cod[pos+3] = ((idx1+1)*(-4));
 						pos += 3;
 					}
 				}
@@ -241,7 +236,7 @@ funcp compila (FILE *f){
 						cod = (unsigned char*)realloc(cod,((pos+1)+3)*sizeof(unsigned char));  /* adiciona mais 3 pos no vetor */
 						cod[pos+1] = 0x8B;
 						cod[pos+2] = 0x4D;
-						cod[pos+3] = (idx2*(-4));
+						cod[pos+3] = ((idx2+1)*(-4));
 						pos += 3;
 					}
 				}
@@ -285,7 +280,7 @@ funcp compila (FILE *f){
 
 				if(idx0 > ultvar) 	/* se for uma nova variavel */
 				{
-					if (ultvar%4 == 0)
+					if (idx0%4 == 0)
 					{
 						cod = (unsigned char*)realloc(cod,((pos+1)+4)*sizeof(unsigned char));  /* adiciona mais 4 pos no vetor */
 						/* subq $16, %rsp - {0x48, 0x83, 0xEC, 0x10} */
@@ -302,7 +297,7 @@ funcp compila (FILE *f){
 				cod = (unsigned char*)realloc(cod,((pos+1)+3)*sizeof(unsigned char));  /* adiciona mais 3 pos no vetor */
 				cod[pos+1] = 0x89;
 				cod[pos+2] = 0x45;
-				cod[pos+3] = (idx0*(-4));
+				cod[pos+3] = ((idx0+1)*(-4));
 				pos += 3;
 				break;
 			}
@@ -313,7 +308,12 @@ funcp compila (FILE *f){
 		fscanf(f, " ");
 	}
 
-	return (funcp) cod; /* se vier aqui, algo deu errado */
+	printf("Vetor Final: ");
+	for(i=0;i<pos+1;i++)
+		printf("%0x ",cod[i]);
+	printf("\n");
+
+	return (funcp) cod; 
 }
 
 void libera (void *p){
