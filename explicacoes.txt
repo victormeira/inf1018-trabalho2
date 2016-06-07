@@ -1,62 +1,52 @@
 EXPLICACOES
 
-RETORNO:
+RETORNO: ret varpc
 	1) Movemos o varpc dado para %eax.
-		Se constante:
+		Se constante: ret $c
 			movl $N, %eax		- {0xB8, N in Little Endian (4 bytes)}
-		Se parametro:
+		Se parametro: ret pi (0 <= i <= 2)
 			movl %edi, %eax		- {0x89, 0xF8}
 			movl %esi, %eax		- {0x89, 0xF0}
 			movl %edx, %eax		- {0x89, 0xD0}
-		Se var local: (idx nos da pos na pilha -> pospilha = 4*idx)
+		Se var local: ret vi (0 <= i <= 19)
+			(idx nos da pos na pilha -> pospilha = 4*idx)
 			movl -N(%rbp), %eax	- {0x8B, 0x45, -N como signed}
 	2) Colocamos leave e ret no final
 		leave				- {0xC9}
 		ret 				- {0xC3}
 
-ATRIBUICAO:
-	1) Movemos o varpc1 para um registrador auxiliar %ecx.
-		Se constante:
+ATRIBUICAO: vi = varpc1 op varpc2 (0 <= i <= 19)
+	1) Movemos o varpc1 para um registrador auxiliar %eax.
+		Se constante: $c
+			movl $N, %eax		- {0xB8, N in Little Endian (4 bytes)}
+		Se parametro: pi (0 <= i <= 2)
+			movl %edi, %eax		- {0x89, 0xF8}
+			movl %esi, %eax		- {0x89, 0xF0}
+			movl %edx, %eax		- {0x89, 0xD0}
+		Se var local: vi (0 <= i <= 19)
+			movl -N(%rbp), %eax	- {0x8B, 0x45, -N como signed}
+	2) Movemos o varpc2 para o registrador auxiliar %ecx
+	Se constante: $c
 			movl $N, %ecx		- {0xB9, N in Little Endian (4 bytes)}
-		Se parametro:
+		Se parametro: pi (0 <= i <= 2)
 			movl %edi, %ecx		- {0x89, 0xF9}
 			movl %esi, %ecx		- {0x89, 0xF1}
 			movl %edx, %ecx		- {0x89, 0xD1}
-		Se var local:
-			movl -N(%rbp), %eax	- {0x8B, 0x45, -N como signed}
-	2) Fazemos a operacao op com varpc2 e %ecx.
-		Se add:
-			Se constante:
-				addl -N(%rbp), %ecx	- {0x03, 0x4D, -N como signed}
-			Se parametro:
-				addl %edi, %ecx		- {0x01, 0xF9}
-				addl %esi, %ecx		- {0x01, 0xF1}
-				addl %edx, %ecx		- {0x01, 0xD1}
-			Se var local:
-				addl $N, %ecx		- {0x83, 0xC1, N} (N<128). {0x81,0xC1, N in Little Endian(4 bytes)} (N>128)
-		Se mult:
-			Se constante:
-				imull -N(%rbp), %ecx- {0x0F, 0xAF, 0x4D, -N como signed}
-			Se parametro:
-				imull %edi, %ecx	- {0x0F, 0xAF, 0xF9}
-				imull %esi, %ecx	- {0x0F, 0xAF, 0xF1}
-				imull %edx, %ecx	- {0x0F, 0xAF, 0xD1}
-			Se var local:
-				imull $N, %ecx		- {0x6B, 0xC9, N} (N<128). {0x69,0xC9, N in Little Endian(4 bytes)} (N>128)
-		Se sub:
-			Se constante:
-				subl -N(%rbp), %ecx	- {0x2B, 0x4D, -N como signed}
-			Se parametro:
-				subl %edi, %ecx		- {0x29, 0xF9}
-				subl %esi, %ecx		- {0x29, 0xF1}
-				subl %edx, %ecx		- {0x29, 0xD1}
-			Se var local:
-				subl $N, %ecx		- {0x83, 0xE9, N} (N<128). {0x81,0xE9, N in Little Endian(4 bytes)} (N>128)
-	3) Movemos de %ecx para var na pos pilha idx dado.
+		Se var local: vi (0 <= i <= 19)
+			movl -N(%rbp), %ecx	- {0x8B, 0x4D, -N como signed}
+	3) Fazemos a operacao op entre %eax e %ecx
+		Se +: vi = varpc + varpc (0 <= i <= 19)
+			addl %ecx, %eax		- {0x01, 0xC8}
+		Se -: vi = varpc - varpc (0 <= i <= 19)
+			subl %ecx, %eax		- {0x29, 0xC8}
+		Se *: vi = varpc * varpc (0 <= i <= 19)
+			imull %ecx, %eax	- {0x0F, 0xAF, 0xC1}
+
+	3) Movemos de %eax para var na pos pilha idx dado.
 		Se idx for "nova":
 			Se mod 4 idx for 0:
 				subq $16, %rsp		- {0x48, 0x83, 0xEC, 0x10}
-		movl %ecx, -N(%rbp)			- {0x89, 0x4D, -N como signed}
+		movl %eax, -N(%rbp)			- {0x89, 0x45, -N como signed}
 
 IF:
 

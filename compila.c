@@ -143,8 +143,8 @@ funcp compila (FILE *f){
 				for(i=0;i<pos+1;i++)
 					printf("0x%0x ",cod[i]);
 				printf("\n");
-
-				return (funcp) cod;
+				
+				break;
 			}
 
 			case 'i': {  				/* if - 'if' var n1 n2 n3 */
@@ -160,7 +160,7 @@ funcp compila (FILE *f){
 				break;
 			}
 
-			case 'v': {  				/* atribuicao - var '=' varpc op varpc */
+			case 'v': {					/* atribuicao - var '=' varpc op varpc */
 				int idx0, idx1, idx2;
 				char var0 = c, var1, var2;
 				char op;
@@ -172,48 +172,138 @@ funcp compila (FILE *f){
 					checkVarP(var1, idx1, line);
 					if(var1 == 'p')	/* 1o eh parametro */
 					{
-
+						cod = (unsigned char*)realloc(cod,((pos+1)+2)*sizeof(unsigned char));  /* adiciona mais 2 pos no vetor */
+						cod[pos+1] = 0x89;
+						pos++;
+						switch (idx2) {
+							case 0: {
+								cod[pos+1] = 0xF8;
+								break;
+							}
+							case 1: {
+								cod[pos+1] = 0xF0;
+								break;
+							}
+							case 2: {
+								cod[pos+1] = 0xD0;
+								break;
+							}
+						}
+						pos++;
 					}
 					else					/* 1o eh varlocal */
 					{
-
+						cod = (unsigned char*)realloc(cod,((pos+1)+3)*sizeof(unsigned char));  /* adiciona mais 3 pos no vetor */
+						cod[pos+1] = 0x8B;
+						cod[pos+2] = 0x45;
+						cod[pos+3] = (idx1*(-4));
+						pos += 3;
 					}
 				}
 				else						/* 1o eh constante */
 				{
-
+					cod = (unsigned char*)realloc(cod,((pos+1)+5)*sizeof(unsigned char));  /* adiciona mais 5 pos no vetor */
+					cod[pos+1] = 0xB8;
+					pos++;
+					
+					for (i=0; i<4; i++) {
+						cod[pos+1] = (unsigned char) idx1 >> (8*i); /* preenche em Little Endian */
+						pos++;
+					}
 				}
-
-				/* implementacao dos casos de operacao */
 
 				if (var2 != '$')
 				{
 					checkVarP(var2, idx2, line);
 					if(var2 == 'p')	/* 2o eh parametro */
 					{
-
+						cod = (unsigned char*)realloc(cod,((pos+1)+2)*sizeof(unsigned char));  /* adiciona mais 2 pos no vetor */
+						cod[pos+1] = 0x89;
+						pos++;
+						switch (idx2) {
+							case 0: {
+								cod[pos+1] = 0xF9;
+								break;
+							}
+							case 1: {
+								cod[pos+1] = 0xF1;
+								break;
+							}
+							case 2: {
+								cod[pos+1] = 0xD1;
+								break;
+							}
+						}
+						pos++;
 					}
 					else					/* 2o eh varlocal */
 					{
-
+						cod = (unsigned char*)realloc(cod,((pos+1)+3)*sizeof(unsigned char));  /* adiciona mais 3 pos no vetor */
+						cod[pos+1] = 0x8B;
+						cod[pos+2] = 0x4D;
+						cod[pos+3] = (idx2*(-4));
+						pos += 3;
 					}
 				}
 				else						/* 2o eh constante */
 				{
+					cod = (unsigned char*)realloc(cod,((pos+1)+5)*sizeof(unsigned char));  /* adiciona mais 5 pos no vetor */
+					cod[pos+1] = 0xB9;
+					pos++;
+					
+					for (i=0; i<4; i++) {
+						cod[pos+1] = (unsigned char) idx2 >> (8*i); /* preenche em Little Endian */
+						pos++;
+					}
+				}
 
+				/* implementacao dos casos de operacao */
+				switch (op) {
+					case '+': {
+						cod = (unsigned char*)realloc(cod,((pos+1)+2)*sizeof(unsigned char));  /* adiciona mais 2 pos no vetor */
+						cod[pos+1] = 0x01;
+						cod[pos+2] = 0xC8;
+						pos += 2;
+						break;
+					}
+					case '-': {
+						cod = (unsigned char*)realloc(cod,((pos+1)+2)*sizeof(unsigned char));  /* adiciona mais 2 pos no vetor */
+						cod[pos+1] = 0x29;
+						cod[pos+2] = 0xC8;
+						pos += 2;
+						break;
+					}
+					case '*': {
+						cod = (unsigned char*)realloc(cod,((pos+1)+3)*sizeof(unsigned char));  /* adiciona mais 3 pos no vetor */
+						cod[pos+1] = 0x0F;
+						cod[pos+2] = 0xAF;
+						cod[pos+3] = 0xC1;
+						pos += 3;
+						break;
+					}
 				}
 
 				if(idx0 > ultvar) 	/* se for uma nova variavel */
 				{
 					if (ultvar%4 == 0)
 					{
+						cod = (unsigned char*)realloc(cod,((pos+1)+4)*sizeof(unsigned char));  /* adiciona mais 4 pos no vetor */
 						/* subq $16, %rsp - {0x48, 0x83, 0xEC, 0x10} */
+						cod[pos+1] = 0x48;
+						cod[pos+2] = 0x83;
+						cod[pos+3] = 0xEC;
+						cod[pos+4] = 0x10;
+						pos += 4;
 					}
 					ultvar++;
 				}
 
 				/* implementacao de mover %ecx para var local lembrando que pospilha = (idx)*(-4) */
-
+				cod = (unsigned char*)realloc(cod,((pos+1)+3)*sizeof(unsigned char));  /* adiciona mais 3 pos no vetor */
+				cod[pos+1] = 0x89;
+				cod[pos+2] = 0x45;
+				cod[pos+3] = (idx0*(-4));
+				pos += 3;
 				break;
 			}
 
@@ -223,7 +313,7 @@ funcp compila (FILE *f){
 		fscanf(f, " ");
 	}
 
-	return NULL; /* se vier aqui, algo deu errado */
+	return (funcp) cod; /* se vier aqui, algo deu errado */
 }
 
 void libera (void *p){
