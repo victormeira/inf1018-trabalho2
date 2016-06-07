@@ -121,7 +121,7 @@ funcp compila (FILE *f){
 
 					for(i=0;i<4;i++)
 					{
-						cod[pos+1]=(unsigned char) idx >> (8*i);  /* preenche em Little Endian */
+						cod[pos+1]=(unsigned char) (idx >> (8*i));  /* preenche em Little Endian */
 						pos++;
 					}
 				}
@@ -202,7 +202,7 @@ funcp compila (FILE *f){
 					pos++;
 					
 					for (i=0; i<4; i++) {
-						cod[pos+1] = (unsigned char) idx1 >> (8*i); /* preenche em Little Endian */
+						cod[pos+1] = (unsigned char) (idx1 >> (8*i)); /* preenche em Little Endian */
 						pos++;
 					}
 				}
@@ -247,7 +247,7 @@ funcp compila (FILE *f){
 					pos++;
 					
 					for (i=0; i<4; i++) {
-						cod[pos+1] = (unsigned char) idx2 >> (8*i); /* preenche em Little Endian */
+						cod[pos+1] = (unsigned char) (idx2 >> (8*i)); /* preenche em Little Endian */
 						pos++;
 					}
 				}
@@ -293,7 +293,7 @@ funcp compila (FILE *f){
 					ultvar++;
 				}
 
-				/* implementacao de mover %ecx para var local lembrando que pospilha = (idx)*(-4) */
+				/* implementacao de mover %eax para var local lembrando que pospilha = (idx+1)*(-4) */
 				cod = (unsigned char*)realloc(cod,((pos+1)+3)*sizeof(unsigned char));  /* adiciona mais 3 pos no vetor */
 				cod[pos+1] = 0x89;
 				cod[pos+2] = 0x45;
