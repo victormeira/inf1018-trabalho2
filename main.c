@@ -19,7 +19,7 @@ int main (int argc, char*argv[]) {
 	}
 	
 	SB = compila(input);
-
+	
 	switch(argc) {
 		case 2:{
 			retorno = SB();
@@ -37,7 +37,7 @@ int main (int argc, char*argv[]) {
 			retorno = SB(atoi(argv[2]),atoi(argv[3]),atoi(argv[4]));
 			break;
 		}
-	}
+	} 
 
 	printf("Valor de Retorno = %d\n", retorno);
 	

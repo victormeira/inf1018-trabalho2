@@ -3,3 +3,201 @@
 
 --------------------------- Relatório de Testes ---------------------------
 
+Testando diretamente no Fedora x64, fizemos os testes, usando essa main:
+
+int main (int argc, char*argv[]) {
+	FILE *input;
+	funcp SB;
+	int retorno;
+	
+	if (argc < 2) {
+		printf ("%s filename\n", argv[0]);
+    	exit(1);
+	}
+	input = fopen(argv[1], "r");
+	if (input == NULL) {
+		printf("Erro ao abrir arquivo!\n");
+		exit(2);
+	}
+	
+	SB = compila(input);
+
+	switch(argc) {
+		case 2:{
+			retorno = SB();
+			break;
+		}
+		case 3:{
+			retorno = SB(atoi(argv[2]));
+			break;
+		}
+		case 4:{
+			retorno = SB(atoi(argv[2]),atoi(argv[3]));
+			break;
+		}
+		case 5:{
+			retorno = SB(atoi(argv[2]),atoi(argv[3]),atoi(argv[4]));
+			break;
+		}
+	}
+
+	printf("Valor de Retorno = %d\n", retorno);
+	
+	libera(SB);
+	
+	return 0;
+}
+
+Começando pelos exemplos dados no enunciado do trabalho, testamos arquivos com as seguintes funções:
+
+(1) ret $1
+
+(2) ret p0
+
+(3) v0 = p1 + p2	//retorna p0*(p1+p2)
+	v0 = p0 * v0	
+	ret v0
+
+(4)	v0 = p0 - p1	//retorna o maior número
+	if v0 3 3 7 	
+	v0 = p1 - p2 	
+	if v0 5 5 6 	
+	ret p2 		
+	ret p1 		
+	v0 = p0 - p2 	
+	if v0 5 5 9 	
+	ret p0 		
+
+(5) v0 = $0 + $1	//retorna o fatorial de p0
+	v1 = p0 + $0
+	if v1 7 7 4
+	v0 = v0 * v1
+	v1 = v1 - $1
+	if v1 7 7 4
+	ret v0
+
+Todos que tiveram as respostas esperadas.
+
+Com isso, nossa checklist de testes fica assim:
+--------------------------- Checklist de Testes ---------------------------
+[X]	Retorno constante
+[X]	Retorno parametro
+[X]	Retorno variavel local
+[X]	Operação Add com constante
+[X]	Operação Add com parametro
+[]	Operação Add com variavel local
+[]	Operação Mult com constante
+[]	Operação Mult com parametro
+[X]	Operação Mult com variavel local
+[X]	Operação Sub com constante
+[]	Operação Sub com parametro
+[X]	Operação Sub com variavel local
+[X]	If para perto para frente
+[X]	If para perto para tras
+[]	If para longe para frente
+[]	If para longe para tras
+[X]	Arquivo com 3 parametros
+[X]  Arquivo com 0 parametros
+[X]	Arquivo com 0 variáveis locais
+[]	Arquivo com 20 variáveis locais
+[X] Arquivo com 1 linha
+[]  Arquivo com 50 linhas
+[]  Usando parametros com números do limits.h
+
+
+Fazendo testes para marcar o que faltou na checklist:
+
+(6) v0 = p0 * $2
+	v1 = v0 + $1
+	v2 = v1 - $5
+	ret v2
+
+	Que finaliza os checks nas operações.
+
+(7) v0 = $0 + $10
+	v1 = $0 + $1
+	v1 = v1 - v0
+	if v1 5 5 50
+	v2 = v1 + $1
+	v3 = v2 + $1
+	v4 = v3 + $1
+	v5 = v4 + $1
+	v6 = v5 + $1
+	v7 = v6 + $1
+	v8 = v7 + $1
+	v9 = v8 + $1
+	v10 = v9 + $1
+	v11 = v10 + $1
+	v12 = v11 + $1
+	v13 = v12 + $1
+	v14 = v13 + $1
+	v15 = v14 + $1
+	v16 = v15 + $1
+	v17 = v16 + $1
+	v18 = v17 + $1
+	v19 = v18 + $1
+	v1 = v19 * $1
+	v1 = v19 * $1
+	v1 = v19 * $1
+	v1 = v19 * $1
+	v1 = v19 * $1
+	v1 = v19 * $1
+	v1 = v19 * $1
+	v1 = v19 * $1
+	v1 = v19 * $1
+	v1 = v19 * $1
+	v1 = v19 * $1
+	v1 = v19 * $1
+	v1 = v19 * $1
+	v1 = v19 * $1
+	v1 = v19 * $1
+	v1 = v19 * $1
+	v1 = v19 * $1
+	v1 = v19 * $1
+	v1 = v19 * $1
+	v1 = v19 * $1
+	v1 = v19 * $1
+	v1 = v19 * $1
+	v1 = v19 * $1
+	v1 = v19 * $1
+	v1 = v19 * $1
+	v1 = v19 * $1
+	if v1 3 3 3
+	ret v1
+
+	Cujo arquivo tem 50 linhas e o resultado esperado é 7. A princípio teve-se como retorno "segmentation fault", mas depois de encontrar o erro na função compila, o retorno foi 7. Esse arquivo dá um check em mais alguns dos testes (Arquivo de 50 linhas, 20 variaveis locais e if com offset grande).
+
+(8) v0 = p0 - $1
+	v1 = p1 + $1
+	if v0 5 5 4
+	ret v0
+	ret v1
+
+	Passando na main como parâmetros INT_MAX e INT_MIN, respectivamente, da biblioteca limits.h, recebemos de fato a resposta esperada, garantindo que as operacoes valem para qualquer valor inteiro.
+
+Com isso, conclui-se a bateria de testes.
+
+--------------------------- Checklist de Testes ---------------------------
+[X]	Retorno constante
+[X]	Retorno parametro
+[X]	Retorno variavel local
+[X]	Operação Add com constante
+[X]	Operação Add com parametro
+[X]	Operação Add com variavel local
+[X]	Operação Mult com constante
+[X]	Operação Mult com parametro
+[X]	Operação Mult com variavel local
+[X]	Operação Sub com constante
+[X]	Operação Sub com parametro
+[X]	Operação Sub com variavel local
+[X]	If para perto para frente
+[X]	If para perto para tras
+[X]	If para longe para frente
+[X]	If para longe para tras
+[X]	Arquivo com 3 parametros
+[X] Arquivo com 0 parametros
+[X]	Arquivo com 0 variáveis locais
+[X]	Arquivo com 20 variáveis locais
+[X] Arquivo com 1 linha
+[X] Arquivo com 50 linhas
+[X] Usando parametros com números do limits.h

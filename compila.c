@@ -31,6 +31,116 @@ int escreveIf (unsigned char *cod, int posicao, Condicao cond);
 
 int escreveAtr (unsigned char *cod, int posicao, int linha, Atribuicao atr);
 
+void preencheIf (unsigned char *cod, int linhas, char *ifcontrol, int *linecontrol);
+
+funcp compila (FILE *f){
+	int c, i;
+	int line = 1;			/* guarda o valor da linha no arquivo */
+	int pos = 0;         	/* conta a ultima pos no vetor cod preenchida */					
+	unsigned char *cod; 	/* vetor com as instrucoes de maquina */
+	char ifcontrol[50];		/* vetor auxiliar onde se ifcontrol[i] == 1, tem if na linha (i+1) */
+	int linecontrol[50];	/* vetor auxiliar que diz a pos no vetor cod da (i-esima+1) linha */
+	unsigned char prep[] = {0x55, 0x48, 0x89, 0xE5, 0x48, 0x83, 0xEC, 0x50};  
+							/* equivalente a prepara pilha */
+							/* FAZER subq $80, %rsp */
+	Retorno ret;
+	Atribuicao atr;
+	Condicao cond;
+
+	cod = (unsigned char*)malloc(sizeof(unsigned char)*1024);
+
+	if(cod==NULL){
+		printf("Erro alocacao de memoria.\n");
+		exit(-1);
+	}
+
+	for(i=0;i<8;i++)
+		cod[i]=prep[i];     /* inicia vetor com pushq %rbp e movq %rsp, %rbp */
+	pos = i-1;
+
+	for(i=0;i<50;i++)
+		ifcontrol[i] = 0;
+	
+	while ((c = fgetc(f)) != EOF){
+		linecontrol[line-1] = (pos+1); 	/* linha comeca pos seguinte a ultima preenchida */
+		switch (c){
+			case 'r': {  				/* retorno - 'ret' varpc */
+				if (fscanf(f, "et %c%d", &ret.var, &ret.idx) != 2) 
+					error("comando invalido", line);
+				
+				pos = escreveRet(cod, pos, line, ret);
+
+				break;
+			}
+
+			case 'i': {  				/* if - 'if' var n1 n2 n3 */
+				if (fscanf(f, "f %c%d %d %d %d", &cond.var, &cond.idx, &cond.Lmenor, &cond.Ligual, &cond.Lmaior) != 5)
+					error("comando invalido", line);
+				if (cond.var != '$'){
+					checkVar(cond.var, cond.idx, line);
+					
+					pos = escreveIf(cod, pos, cond);
+
+					ifcontrol[line-1] = 1; /* seta o ifcontrol a 1 para dizer que tem if na linha line */
+				}
+				break;
+			}
+
+			case 'v': {					/* atribuicao - var '=' varpc op varpc */
+				if (fscanf(f, "%d = %c%d %c %c%d", &atr.idx0, &atr.var1, &atr.idx1, &atr.op, &atr.var2, &atr.idx2) != 6)
+					error("comando invalido", line);
+
+				pos = escreveAtr(cod, pos, line, atr);
+
+				break;
+			}
+			default: error("comando desconhecido", line);
+		}
+		line ++;
+		fscanf(f, " ");
+	}
+
+	preencheIf(cod,line,ifcontrol,linecontrol);
+
+	return (funcp) cod; 
+}
+
+void libera (void *p){
+	free(p);
+	return;
+}
+
+static void error (const char *msg, int line) {
+	printf("erro %s na linha %d\n", msg, line);
+	exit(EXIT_FAILURE);
+}
+
+void checkVar(char var, int idx, int line) {
+	switch (var) {
+		case 'v':
+			if ((idx < 0) || (idx > 19))
+			 error("operando invalido", line);
+			break;
+		default:
+			 error("operando invalido", line);
+	 }
+}
+		 
+void checkVarP(char var, int idx, int line) {
+	switch (var) {
+		case 'v':
+			if ((idx < 0) || (idx > 19))
+			 error("operando invalido", line);
+			break;
+		case 'p':
+			if ((idx < 0) || (idx > 2))
+			 error("operando invalido", line);
+			break;
+		default:
+			 error("operando invalido", line);
+	 }
+}
+
 int escreveRet(unsigned char *cod, int posicao, int linha, Retorno ret) {
 	int pos = posicao;
 	int i;
@@ -215,18 +325,6 @@ int escreveAtr (unsigned char *cod, int posicao, int linha, Atribuicao atr) {
 		}
 	}
 
-	//if(atr.idx0 > ultvar){ 		/* se for uma nova variavel */
-	//	if (idx0%4 == 0){ 	/* se passar for multiplo de 4, quer dizer que tem que tirar mais 16 da pilha */
-	//		/* subq $16, %rsp - {0x48, 0x83, 0xEC, 0x10} */
-	//		cod[pos+1] = 0x48;
-	//		cod[pos+2] = 0x83;
-	//		cod[pos+3] = 0xEC;
-	//		cod[pos+4] = 0x10;
-	//		pos += 4;
-	//	}
-	//	ultvar++;
-	//}
-
 	/* implementacao de mover %eax para var local lembrando que pospilha = (idx+1)*(-4) */
 	cod[pos+1] = 0x89;
 	cod[pos+2] = 0x45;
@@ -236,133 +334,27 @@ int escreveAtr (unsigned char *cod, int posicao, int linha, Atribuicao atr) {
 	return pos;
 }
 
-static void error (const char *msg, int line) {
-	printf("erro %s na linha %d\n", msg, line);
-	exit(EXIT_FAILURE);
-}
+void preencheIf (unsigned char *cod, int linhas, char *ifcontrol, int *linecontrol){
+	int pos;
+	int offset;
+	int i, j, k;
 
-void checkVar(char var, int idx, int line) {
-	switch (var) {
-		case 'v':
-			if ((idx < 0) || (idx > 19))
-			 error("operando invalido", line);
-			break;
-		default:
-			 error("operando invalido", line);
-	 }
-}
-		 
-void checkVarP(char var, int idx, int line) {
-	switch (var) {
-		case 'v':
-			if ((idx < 0) || (idx > 19))
-			 error("operando invalido", line);
-			break;
-		case 'p':
-			if ((idx < 0) || (idx > 2))
-			 error("operando invalido", line);
-			break;
-		default:
-			 error("operando invalido", line);
-	 }
-}
-
-funcp compila (FILE *f){
-	int c, i, j, k, offset;
-	int line = 1;			/* guarda o valor da linha no arquivo */
-	//int ultvar = -1;		/* guarda o indice da ult var local criada */
-	int pos = 0;         	/* conta a ultima pos no vetor cod preenchida */
-	int posifaux = 0;		/* inteiro auxiliar para calculo do offset if */					
-	unsigned char *cod; 	/* vetor com as instrucoes de maquina */
-	char ifcontrol[50];		/* vetor auxiliar onde se ifcontrol[i] == 1, tem if na linha (i+1) */
-	int linecontrol[50];	/* vetor auxiliar que diz a pos no vetor cod da (i-esima+1) linha */
-	unsigned char prep[] = {0x55, 0x48, 0x89, 0xE5, 0x48, 0x83, 0xEC, 0x50};  
-							/* equivalente a prepara pilha */
-							/* FAZER subq $80, %rsp */
-	Retorno ret;
-	Atribuicao atr;
-	Condicao cond;
-
-	cod = (unsigned char*)malloc(sizeof(unsigned char)*1024);
-
-	if(cod==NULL){
-		printf("Erro alocacao de memoria.\n");
-		exit(-1);
-	}
-
-	for(i=0;i<8;i++)
-		cod[i]=prep[i];     /* inicia vetor com pushq %rbp e movq %rsp, %rbp */
-	pos = i-1;
-
-	for(i=0;i<50;i++)
-		ifcontrol[i] = 0;
-	
-	while ((c = fgetc(f)) != EOF){
-		linecontrol[line-1] = (pos+1); 	/* linha comeca pos seguinte a ultima preenchida */
-		switch (c){
-			case 'r': {  				/* retorno - 'ret' varpc */
-				if (fscanf(f, "et %c%d", &ret.var, &ret.idx) != 2) 
-					error("comando invalido", line);
-				
-				pos = escreveRet(cod, pos, line, ret);
-
-				break;
-			}
-
-			case 'i': {  				/* if - 'if' var n1 n2 n3 */
-				if (fscanf(f, "f %c%d %d %d %d", &cond.var, &cond.idx, &cond.Lmenor, &cond.Ligual, &cond.Lmaior) != 5)
-					error("comando invalido", line);
-				if (cond.var != '$'){
-					checkVar(cond.var, cond.idx, line);
-					
-					pos = escreveIf(cod, pos, cond);
-
-					ifcontrol[line-1] = 1; /* seta o ifcontrol a 1 para dizer que tem if na linha line */
-				}
-				break;
-			}
-
-			case 'v': {					/* atribuicao - var '=' varpc op varpc */
-				if (fscanf(f, "%d = %c%d %c %c%d", &atr.idx0, &atr.var1, &atr.idx1, &atr.op, &atr.var2, &atr.idx2) != 6)
-					error("comando invalido", line);
-
-				pos = escreveAtr(cod, pos, line, atr);
-
-				break;
-			}
-			default: error("comando desconhecido", line);
-		}
-		line ++;
-		fscanf(f, " ");
-	}
-
-	for(i=0;i<line;i++){
+	for(i=0;i<linhas-1;i++){
 		if(ifcontrol[i]){
-			posifaux = linecontrol[i]; /* posicao no vetor cod que comeca o if*/
-			posifaux += 4;
+			pos = linecontrol[i]; /* posicao no vetor cod que comeca o if*/
+			pos += 4;
 
 			for(k=0;k<3;k++){
-				posifaux+=2; /* pula para prox buraco do if */
-				offset = (linecontrol[cod[posifaux]-1] - posifaux)-4;
+				pos+=2; /* pula para prox buraco do if */
+				offset = (linecontrol[cod[pos]-1] - pos)-4;
 							/* posicao da linha que esta no cod atual menos a pos atual */
 							/* -4 pois o ultimo pedaco do offset esta 4 bytes depois */
 				for (j=0; j<4; j++){
-						cod[posifaux] = (unsigned char) (offset >> (8*j)); /* preenche em Little Endian */
-						posifaux++;
+						cod[pos] = (unsigned char) (offset >> (8*j)); /* preenche em Little Endian */
+						pos++;
 				}
 			}
 		}
 	} 
-
-	printf("Vetor Final: ");
-	for(i=0;i<pos+1;i++)
-		printf("%0x ",cod[i]);
-	printf("\n");
-
-	return (funcp) cod; 
-}
-
-void libera (void *p){
-	free(p);
 	return;
 }
